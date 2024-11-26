@@ -3,6 +3,7 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using SqlClient.Domain;
 using SqlClient.SeedWork;
+using static Azure.Core.HttpHeader;
 
 namespace SqlClient;
 
@@ -15,7 +16,6 @@ public class Database(string connectionString) : IDatabase
         const string query = "SELECT Id, Note, Inserted FROM Notes";
 
         connection.Open();
-
         var note = connection.Query<MyNote>(query);
 
         /*
@@ -41,10 +41,17 @@ public class Database(string connectionString) : IDatabase
         const string query = "INSERT INTO Notes (Note, Inserted) VALUES (@Note, @Inserted)";
 
         connection.Open();
-
-        connection.Execute(query, new { Id = Guid.NewGuid(), Note = note,
-            Inserted = DateTimeOffset.Now
-        });
+        var transaction = connection.BeginTransaction();
+        try
+        {
+            
+            connection.Execute(query, new { Id = Guid.NewGuid(), Note = note, Inserted = DateTimeOffset.Now }, transaction);
+            transaction.Commit();
+        }
+        catch (Exception e)
+        {
+            transaction.Rollback();
+        }
 
         /*
         using var command = new SqlCommand(query, connection);
@@ -61,14 +68,23 @@ public class Database(string connectionString) : IDatabase
         const string updateQuery = "UPDATE Notes SET Note = @Note WHERE Id = @Id";
 
         connection.Open();
+        var transaction = connection.BeginTransaction();
+        try {
+            connection.Execute(updateQuery, new { Id = id, Note = note }, transaction);
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+        } 
 
-        connection.Execute(updateQuery, new { Id = id, Note = note });
+        /*
+        using var command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@Id", id);
+        command.Parameters.AddWithValue("@Note", note);
 
-        //using var command = new SqlCommand(query, connection);
-        //command.Parameters.AddWithValue("@Id", id);
-        //command.Parameters.AddWithValue("@Note", note);
-
-        //command.ExecuteNonQuery();
+        command.ExecuteNonQuery();
+        */
 
         connection.Close();
     }
@@ -78,8 +94,17 @@ public class Database(string connectionString) : IDatabase
         const string deleteQuery = "DELETE FROM Notes WHERE Id = @Id";
 
         connection.Open();
+        var transaction = connection.BeginTransaction();
+        try
+        {
+            connection.Execute(deleteQuery, new { Id = id }, transaction);
+            transaction.Commit();
 
-        connection.Execute(deleteQuery, new { Id = id });
+        }
+        catch
+        {
+            transaction.Rollback();
+        }
 
         /*
         using var command = new SqlCommand(query, connection);
@@ -96,25 +121,14 @@ public class Database(string connectionString) : IDatabase
         const string query = "INSERT INTO Notes (Note, Inserted) VALUES (@Note, @Inserted)";
 
         connection.Open();
-        var time = DateTimeOffset.Now;
-
-        
         var transaction = connection.BeginTransaction();
-        
-        //using var command = new SqlCommand(query, connection,transaction);
         
         try
         {
-            //command.Parameters.Add("@Note", SqlDbType.NVarChar);
-            //command.Parameters.Add("@Inserted", SqlDbType.DateTimeOffset);
             foreach (var note in notes)
             {
-                connection.Execute(query, new { Note = note, Inserted = time} , transaction);
-                //command.Parameters["@Note"].Value = note;
-                //command.Parameters["@Inserted"].Value = time;
-                //command.ExecuteNonQuery();
+                connection.Execute(query, new { Id = Guid.NewGuid(), Note = note, Inserted = DateTimeOffset.Now } , transaction);
             }
-            
             transaction.Commit();
         }
         catch (Exception e)
