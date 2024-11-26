@@ -29,7 +29,7 @@ public class UnitOfWork(IDatabase database) : IDisposable, IAsyncDisposable
             while (true)
             {
                 WriteLine(
-                    "Choose an operation: 1) Read All 2) Insert Note 3) Update Note 4)  massive insert 5  ) Delete Note 6) Exit");
+                    "Choose an operation: 1) Read All 2) Insert Note 3) Update Note 4) Delete Note 5) Massive insert 6) Exit");
                 var choice = ReadLine();
 
                 switch (choice)
