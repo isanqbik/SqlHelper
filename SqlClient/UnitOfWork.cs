@@ -61,7 +61,7 @@ public class UnitOfWork(IDatabase database) : IDisposable, IAsyncDisposable
     private void Read()
     {
         foreach (var note in database.Read())
-            WriteLine($"Id: {note.Id}, Note: {note.Note}, Expiring Date: {note.Inserted}");
+            WriteLine($"Id: {note.Id}, Note: {note.Note}, Expiring Date: {note.Expiring}");
     }
 
     private void Insert()

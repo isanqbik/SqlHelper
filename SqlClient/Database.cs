@@ -13,7 +13,7 @@ public class Database(string connectionString) : IDatabase
 
     public IEnumerable<MyNote> Read()
     {
-        const string query = "SELECT Id, Note, Inserted FROM Notes";
+        const string query = "SELECT Id, Note, Inserted AS Expiring FROM Notes";
 
         connection.Open();
         var note = connection.Query<MyNote>(query);
